@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+*.db
+
+# Node
+node_modules/
+dist/
+
+# Env
+.env
+
+# ML artefacts
+models/data/*
+!models/data/.gitkeep
+models/checkpoints/*
+!models/checkpoints/.gitkeep
+.ipynb_checkpoints/
+
+# Recordings
+*.webm

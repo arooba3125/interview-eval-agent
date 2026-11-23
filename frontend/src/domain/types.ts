@@ -54,3 +54,39 @@ export interface SessionSummary {
   areas_to_improve: string[];
   patterns: string[];
 }
+
+// ---------------------------------------------------------------------------
+// Frontend-only types. The backend has no equivalent yet.
+// ---------------------------------------------------------------------------
+
+export type ExperienceLevel = "intern" | "junior" | "mid" | "senior";
+export type InterviewType = "technical" | "behavioural" | "mixed";
+
+/** What the candidate picks on the setup form, before consent is given. */
+export interface InterviewConfig {
+  job_role: string;
+  experience_level: ExperienceLevel;
+  interview_type: InterviewType;
+}
+
+/** One answered question with its feedback, kept for the final report. */
+export interface QuestionResult {
+  question: Question;
+  feedback: AnswerFeedback;
+  answer_duration_s: number;
+  answered_at: string;
+}
+
+/**
+ * A practice session as the browser remembers it (localStorage). Used for the
+ * report and the previous-sessions list until the backend stores sessions.
+ */
+export interface SessionRecord {
+  session: Session;
+  camera_enabled: boolean;
+  started_at: string;
+  completed_at: string | null;
+  results: QuestionResult[];
+  /** True for the built-in example sessions shown in demo mode. */
+  is_sample: boolean;
+}

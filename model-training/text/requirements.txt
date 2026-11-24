@@ -1,0 +1,10 @@
+# Text module: BERT fine-tuning on GoEmotions (Python 3.10-3.12)
+# For a CUDA GPU, install torch first from https://pytorch.org/get-started/locally/
+torch>=2.2
+transformers>=4.46
+datasets>=2.20
+accelerate>=0.34
+scikit-learn>=1.3
+pandas>=2.0
+matplotlib>=3.7
+jupyter>=1.0

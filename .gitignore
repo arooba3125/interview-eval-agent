@@ -19,6 +19,7 @@ models/data/*
 models/checkpoints/*
 !models/checkpoints/.gitkeep
 .ipynb_checkpoints/
+model-training/**/outputs/
 
 # Recordings
 *.webm

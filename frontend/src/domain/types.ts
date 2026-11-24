@@ -48,6 +48,30 @@ export interface AnswerFeedback {
   suggestions: string[];
 }
 
+export interface LabelScore {
+  label: string;
+  score: number;
+}
+
+/**
+ * Experimental text emotion analysis (POST /analysis/text-emotion). Describes emotions
+ * expressed in the wording only: not knowledge, correctness, confidence, anxiety, passion
+ * or job suitability.
+ */
+export interface TextEmotionResult {
+  analysis_type: "experimental_text_emotion";
+  experimental: true;
+  notice: string;
+  /** Labels at or above the threshold, highest first. May be empty. */
+  detected_labels: string[];
+  /** Probability (0..1) for every label. */
+  scores: Record<string, number>;
+  top_label: LabelScore;
+  threshold: number;
+  chunks: number;
+  model: string;
+}
+
 export interface SessionSummary {
   session_id: string;
   strengths: string[];

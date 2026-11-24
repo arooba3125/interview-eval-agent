@@ -34,6 +34,18 @@ in `localStorage` (`src/services/historyStore.ts`).
 To use the FastAPI backend instead, set `VITE_USE_MOCK_API=false` in `.env`.
 Viewmodels only talk to `services/interviewApi.ts`, so no view code changes.
 
+## Experimental text emotion analysis (live)
+
+The interview screen has an optional **Answer transcript** box (speech-to-text is not
+connected yet). When an answer is submitted with a transcript, `useTextEmotion` sends it
+to `POST /api/v1/analysis/text-emotion` through the Vite `/api` proxy, in mock mode too,
+since it is the one real model in the app. The result appears in its own "Text emotion
+analysis" section of the feedback panel, badged *Experimental · live model*, with loading,
+error (with retry) and "no transcript" states. It is held in memory only: it is never
+written to the mock session history, reports or previous sessions. It describes emotions
+expressed in the wording, never knowledge, correctness, confidence, anxiety, passion or
+job suitability. Needs the backend running on port 8000.
+
 Delivery feedback is shown as observable cues (pace, pauses, volume, optional
 face-toward-camera ratio). The UI never presents them as evidence of confidence,
 anxiety, passion or job suitability.

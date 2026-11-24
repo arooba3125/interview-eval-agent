@@ -1,0 +1,116 @@
+{
+  "run_name": "bert-goemotions-small",
+  "small_run": true,
+  "created_utc": "2026-11-24T09:39:11+00:00",
+  "config": {
+    "model_name": "bert-base-uncased",
+    "dataset_name": "google-research-datasets/go_emotions",
+    "dataset_config": "simplified",
+    "max_length": 64,
+    "learning_rate": 5e-05,
+    "weight_decay": 0.01,
+    "warmup_fraction": 0.1,
+    "train_batch_size": 32,
+    "eval_batch_size": 64,
+    "num_epochs": 5,
+    "early_stopping_patience": 2,
+    "default_threshold": 0.5,
+    "train_subset": 2000,
+    "eval_subset": 500,
+    "seed": 42
+  },
+  "environment": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu130",
+    "transformers": "5.22.1",
+    "datasets": "4.8.5",
+    "scikit-learn": "1.6.1",
+    "device": "Tesla T4"
+  },
+  "data": {
+    "train": 2000,
+    "validation": 500,
+    "test": 500
+  },
+  "training": {
+    "minutes": 1.7,
+    "epochs_run": 5.0,
+    "best_checkpoint": "/content/outputs/bert-goemotions-small/checkpoints/checkpoint-189",
+    "best_validation_macro_roc_auc": 0.5872315931161382
+  },
+  "validation": {
+    "tuned_threshold": 0.1,
+    "metrics_at_tuned_threshold": {
+      "micro_f1": 0.2828282828282828,
+      "macro_f1": 0.016819571865443424,
+      "weighted_f1": 0.12313411525261807,
+      "samples_f1": 0.298,
+      "micro_precision": 0.308,
+      "micro_recall": 0.2614601018675722,
+      "macro_precision": 0.011,
+      "macro_recall": 0.03571428571428571,
+      "subset_accuracy": 0.28,
+      "hamming_loss": 0.055785714285714286,
+      "macro_roc_auc": 0.5815523269865348
+    }
+  },
+  "test": {
+    "threshold_0.5": {
+      "micro_f1": 0.0,
+      "macro_f1": 0.0,
+      "weighted_f1": 0.0,
+      "samples_f1": 0.0,
+      "micro_precision": 0.0,
+      "micro_recall": 0.0,
+      "macro_precision": 0.0,
+      "macro_recall": 0.0,
+      "subset_accuracy": 0.0,
+      "hamming_loss": 0.04064285714285714,
+      "macro_roc_auc": 0.5839985420137402
+    },
+    "threshold_tuned": {
+      "micro_f1": 0.28811973807296537,
+      "macro_f1": 0.016819571865443424,
+      "weighted_f1": 0.12746220366220043,
+      "samples_f1": 0.29733333333333334,
+      "micro_precision": 0.308,
+      "micro_recall": 0.27065026362038663,
+      "macro_precision": 0.011,
+      "macro_recall": 0.03571428571428571,
+      "subset_accuracy": 0.278,
+      "hamming_loss": 0.054357142857142854,
+      "macro_roc_auc": 0.5839985420137402
+    }
+  },
+  "test_per_label_f1": {
+    "admiration": 0.0,
+    "amusement": 0.0,
+    "anger": 0.0,
+    "annoyance": 0.0,
+    "approval": 0.0,
+    "caring": 0.0,
+    "confusion": 0.0,
+    "curiosity": 0.0,
+    "desire": 0.0,
+    "disappointment": 0.0,
+    "disapproval": 0.0,
+    "disgust": 0.0,
+    "embarrassment": 0.0,
+    "excitement": 0.0,
+    "fear": 0.0,
+    "gratitude": 0.0,
+    "grief": 0.0,
+    "joy": 0.0,
+    "love": 0.0,
+    "nervousness": 0.0,
+    "optimism": 0.0,
+    "pride": 0.0,
+    "realization": 0.0,
+    "relief": 0.0,
+    "remorse": 0.0,
+    "sadness": 0.0,
+    "surprise": 0.0,
+    "neutral": 0.4709
+  },
+  "model_dir": "outputs/bert-goemotions-small/model"
+}

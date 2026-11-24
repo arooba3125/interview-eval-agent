@@ -26,8 +26,24 @@ adapter (`services/analysis_service.py`), so a model change does not touch the r
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-pip install -e ../models          # the ML package
+pip install -e "../models[text]"  # the ML package (+ torch/transformers for text emotion)
 uvicorn app.main:app --reload
 ```
 
 API docs at http://localhost:8000/docs.
+
+## Experimental text emotion analysis
+
+`POST /api/v1/analysis/text-emotion` with `{"transcript": "..."}` runs the BERT model
+fine-tuned on GoEmotions (`model-training/text/`) and returns the emotions expressed in the
+wording: `detected_labels` (at or above the saved threshold), `scores` for all 28 labels and
+`top_label`. Every response carries `"experimental": true` and a notice that it is **not** a
+measure of knowledge, correctness, confidence, anxiety, passion or job suitability.
+
+- The model folder defaults to `../model-training/text/outputs/bert-goemotions-full/model`;
+  set `TEXT_EMOTION_MODEL_DIR` to use another one. It is loaded on the first request and
+  never downloaded.
+- Errors: empty transcript → `422`; model folder, tokenizer or `inference_config.json`
+  missing or unreadable → `503` with the reason.
+- Long transcripts are split into overlapping 128-token windows; each label keeps its
+  highest probability across windows.

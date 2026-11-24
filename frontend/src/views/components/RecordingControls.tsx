@@ -2,10 +2,14 @@ import { useEffect, useRef } from "react";
 import type { RecorderStatus, Recording } from "../../viewmodels/useMediaRecorder";
 import { formatDuration } from "../../domain/scoring";
 import RecordingTimer from "./RecordingTimer";
+import MicLevelMeter from "./MicLevelMeter";
+import StatusMessage from "./StatusMessage";
 
 interface Props {
   status: RecorderStatus;
   elapsed: number;
+  /** Live microphone input level, 0..1. */
+  level: number;
   maxSeconds: number;
   recording: Recording | null;
   hasVideo: boolean;
@@ -43,7 +47,35 @@ export default function RecordingControls(p: Props) {
             <span className="rec-dot" aria-hidden="true" /> Recording
           </span>
         )}
+        {(isRecording || p.status === "live") && (
+          <span className="controls__meter" title="Microphone input level">
+            <span className="visually-hidden">Microphone input level</span>
+            <MicLevelMeter level={p.level} active />
+          </span>
+        )}
       </div>
+
+      {p.recording?.silent && (
+        <StatusMessage variant="warning" title="No sound was picked up in this recording">
+          <p>
+            The recording ran, but your microphone sent silence. This usually means the browser cannot hear the
+            microphone, even if other apps can. Check these, then reload this page and record again:
+          </p>
+          <ul>
+            <li>
+              Windows: Settings › Privacy &amp; security › Microphone. Turn on <strong>Microphone access</strong> and{" "}
+              <strong>Let desktop apps access your microphone</strong>. Store apps such as WhatsApp have a separate
+              switch, so they can work while browsers are blocked.
+            </li>
+            <li>
+              In the browser, click the icon at the left of the address bar, open the microphone setting and choose
+              the microphone you use in other apps.
+            </li>
+            <li>Make sure the microphone is not muted (headset switch or a mute key).</li>
+          </ul>
+          <p>You can still submit this take, but there will be nothing to hear on replay.</p>
+        </StatusMessage>
+      )}
 
       {p.recording ? (
         <div className="replay">

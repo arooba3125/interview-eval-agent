@@ -19,6 +19,21 @@ class ContentScore:
 
 
 @dataclass
+class TextEmotionResult:
+    """Experimental: emotions expressed in the wording of a transcript.
+
+    Not a measure of knowledge, correctness, confidence, anxiety, passion or job suitability.
+    """
+    labels: list[str]          # labels at or above the threshold, highest score first (may be empty)
+    scores: dict[str, float]   # probability for every label
+    top_label: str
+    top_score: float
+    threshold: float
+    chunks: int = 1            # number of text windows a long transcript was split into
+    model: str = ""
+
+
+@dataclass
 class Observation:
     """A measured signal plus a neutral, plain-language note. Never a verdict about the person."""
     signal: str

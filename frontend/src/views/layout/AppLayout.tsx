@@ -37,7 +37,8 @@ export default function AppLayout() {
         <div className="demo-banner" role="note">
           <div className="container">
             <strong>Demo mode.</strong> Questions and feedback are sample data generated in your browser. Your answers
-            are recorded for replay but not analysed, and nothing is uploaded.
+            are recorded for replay but not analysed or uploaded. Only a transcript you choose to type is sent to the
+            local backend, for the experimental text emotion analysis.
           </div>
         </div>
       )}

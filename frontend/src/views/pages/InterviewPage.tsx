@@ -13,6 +13,7 @@ import FeedbackPanel from "../components/FeedbackPanel";
 import StatusMessage from "../components/StatusMessage";
 import StepIndicator from "../components/StepIndicator";
 import PermissionHelp from "../components/PermissionHelp";
+import TranscriptInput from "../components/TranscriptInput";
 
 // Step 3: show a question, record, analyse, show feedback, continue.
 export default function InterviewPage() {
@@ -156,6 +157,7 @@ export default function InterviewPage() {
                   <RecordingControls
                     status={media.status}
                     elapsed={media.elapsed}
+                    level={media.level}
                     maxSeconds={MAX_ANSWER_SECONDS}
                     recording={media.recording}
                     hasVideo={cameraOn}
@@ -165,6 +167,7 @@ export default function InterviewPage() {
                     onSubmit={submit}
                   />
                 )}
+                <TranscriptInput value={vm.transcriptDraft} onChange={vm.setTranscriptDraft} />
                 {vm.submitError && (
                   <StatusMessage
                     variant="error"
@@ -190,7 +193,10 @@ export default function InterviewPage() {
                 <h2 id="feedback-heading" ref={feedbackHeading} tabIndex={-1}>
                   Feedback on question {vm.question.index}
                 </h2>
-                <FeedbackPanel feedback={vm.feedback} />
+                <FeedbackPanel
+                  feedback={vm.feedback}
+                  textEmotion={{ state: vm.textEmotion, onRetry: vm.textEmotion.retry }}
+                />
                 <div className="btn-row">
                   {vm.isLastQuestion ? (
                     <button type="button" className="btn btn--primary btn--lg" onClick={next}>

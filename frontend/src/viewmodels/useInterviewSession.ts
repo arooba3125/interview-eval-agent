@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { interviewApi } from "../services/interviewApi";
 import { historyStore } from "../services/historyStore";
 import type { AnswerFeedback, Question, SessionRecord } from "../domain/types";
+import { useTextEmotion } from "./useTextEmotion";
 
 export type Phase = "loading" | "answering" | "analyzing" | "feedback" | "done" | "error";
 
@@ -22,6 +23,9 @@ export function useInterviewSession(sessionId: string) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
   const [answeredCount, setAnsweredCount] = useState(record?.results.length ?? 0);
+  // Optional typed transcript for the experimental text emotion analysis (live model, not stored).
+  const [transcriptDraft, setTranscriptDraft] = useState("");
+  const textEmotion = useTextEmotion();
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -30,10 +34,14 @@ export function useInterviewSession(sessionId: string) {
     };
   }, []);
 
+  const { analyze: analyzeTextEmotion, reset: resetTextEmotion } = textEmotion;
+
   const loadNext = useCallback(async () => {
     setFeedback(null);
     setSubmitError(null);
     setLoadError(null);
+    setTranscriptDraft("");
+    resetTextEmotion();
     setPhase("loading");
     try {
       const q = await interviewApi.nextQuestion(sessionId);
@@ -46,7 +54,7 @@ export function useInterviewSession(sessionId: string) {
       setLoadError(e instanceof Error ? e.message : "Could not load the next question.");
       setPhase("error");
     }
-  }, [sessionId]);
+  }, [sessionId, resetTextEmotion]);
 
   useEffect(() => {
     void loadNext();
@@ -65,6 +73,9 @@ export function useInterviewSession(sessionId: string) {
       if (!question) return;
       setSubmitError(null);
       setPhase("analyzing");
+      // Runs alongside the main analysis; its result is shown in the feedback panel but never
+      // written to the session history, so mock results and live model output stay separate.
+      void analyzeTextEmotion(transcriptDraft);
       try {
         const fb = await interviewApi.submitAnswer(sessionId, question.id, recording);
         if (!alive.current) return;
@@ -79,11 +90,12 @@ export function useInterviewSession(sessionId: string) {
         setPhase("feedback");
       } catch (e) {
         if (!alive.current) return;
+        resetTextEmotion();
         setSubmitError(e instanceof Error ? e.message : "The answer could not be analysed.");
         setPhase("answering");
       }
     },
-    [sessionId, question],
+    [sessionId, question, transcriptDraft, analyzeTextEmotion, resetTextEmotion],
   );
 
   const finishEarly = useCallback(() => historyStore.complete(sessionId), [sessionId]);
@@ -92,6 +104,7 @@ export function useInterviewSession(sessionId: string) {
 
   return {
     record, phase, question, feedback, loadError, submitError, stage, answeredCount, isLastQuestion,
+    transcriptDraft, setTranscriptDraft, textEmotion,
     submit, loadNext, finishEarly,
   };
 }

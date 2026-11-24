@@ -80,6 +80,12 @@ export function startLevelMeter(stream: MediaStream, onLevel: (level: number) =>
   ctx.createMediaStreamSource(stream).connect(analyser);
   const data = new Uint8Array(analyser.fftSize);
   const timer = window.setInterval(() => {
+    // An AudioContext created before any click starts "suspended" and reads as silence.
+    // Resume it (allowed once the user has interacted) and only report real readings.
+    if (ctx.state !== "running") {
+      void ctx.resume().catch(() => {});
+      return;
+    }
     analyser.getByteTimeDomainData(data);
     let sum = 0;
     for (const v of data) sum += ((v - 128) / 128) ** 2;

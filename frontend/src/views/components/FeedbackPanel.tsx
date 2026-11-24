@@ -4,6 +4,8 @@ import { USE_MOCK_API } from "../../services/config";
 import ScoreBar from "./ScoreBar";
 import CueNotice from "./CueNotice";
 import SampleBadge from "./SampleBadge";
+import TextEmotionSection from "./TextEmotionSection";
+import type { TextEmotionState } from "../../viewmodels/useTextEmotion";
 
 function formatValue(o: DeliveryObservation): string {
   const info = signalInfo(o);
@@ -32,13 +34,18 @@ interface Props {
   feedback: AnswerFeedback;
   /** Heading level of the panel's own section headings. */
   headingLevel?: 3 | 4;
+  /**
+   * Live experimental text emotion analysis for this answer. Only passed on the interview
+   * screen; reports and history (sample data) never show it.
+   */
+  textEmotion?: { state: TextEmotionState; onRetry: () => void };
 }
 
 /**
  * Per-question feedback in three separate parts. Content scores assess the answer;
  * delivery items are observations, never verdicts about the person.
  */
-export default function FeedbackPanel({ feedback, headingLevel = 3 }: Props) {
+export default function FeedbackPanel({ feedback, headingLevel = 3, textEmotion }: Props) {
   const { content, delivery, suggestions } = feedback;
   const H = `h${headingLevel}` as "h3" | "h4";
   const voice = delivery.filter((d) => signalInfo(d).group === "voice");
@@ -139,6 +146,10 @@ export default function FeedbackPanel({ feedback, headingLevel = 3 }: Props) {
           <p className="muted">No suggestions for this answer.</p>
         )}
       </section>
+
+      {textEmotion && (
+        <TextEmotionSection state={textEmotion.state} onRetry={textEmotion.onRetry} headingLevel={headingLevel} />
+      )}
     </div>
   );
 }

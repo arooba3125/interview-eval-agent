@@ -18,6 +18,7 @@ ie_models/
   vocal_analysis/    audio -> pace (wpm), pauses, volume, pitch variation   e.g. librosa / pyannote
   visual_analysis/   video frames -> gaze direction, facial movement,
                      hand movement                                     e.g. MediaPipe Face Mesh / Hands
+  text_emotion/      transcript -> emotions expressed in the wording (EXPERIMENTAL)  BERT fine-tuned on GoEmotions
   feedback/          combines the above into suggestions and observations
   common/            shared types, audio/video loading, config
 training/            scripts to train or fine-tune each model

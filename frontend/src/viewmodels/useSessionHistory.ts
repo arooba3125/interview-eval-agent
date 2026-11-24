@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 import type { SessionRecord } from "../domain/types";
-import { averageContentScore } from "../domain/scoring";
+import { deliveryOverview } from "../domain/scoring";
 import { historyStore } from "../services/historyStore";
 
 export interface SessionListItem {
   record: SessionRecord;
-  score: number | null;
+  /** Average measured speaking pace, or null when no answer could be measured. */
+  averagePace: number | null;
   answered: number;
   total: number;
 }
@@ -21,7 +22,7 @@ export function useSessionHistory() {
         .filter((r) => roleFilter === "all" || r.session.job_role === roleFilter)
         .map((r) => ({
           record: r,
-          score: averageContentScore(r.results),
+          averagePace: deliveryOverview(r.results).averagePace,
           answered: r.results.length,
           total: r.results[0]?.question.total ?? 0,
         })),

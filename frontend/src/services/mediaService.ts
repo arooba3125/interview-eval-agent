@@ -75,7 +75,9 @@ export async function openStream(opts: { audio: boolean; video: boolean; micId?:
   if (!isMediaSupported()) {
     throw new MediaAccessError("unsupported", "This browser cannot record audio. Try a recent Chrome, Edge, Firefox or Safari.");
   }
-  const audio: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: true };
+  // Automatic gain control is off so the recording keeps real loudness changes, which the
+  // relative-volume delivery measurement compares (AGC would flatten them).
+  const audio: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
   if (opts.micId) audio.deviceId = { exact: opts.micId };
   try {
     return await navigator.mediaDevices.getUserMedia({
@@ -108,6 +110,43 @@ export function pickMimeType(hasVideo: boolean): string | undefined {
 export function createRecorder(stream: MediaStream): MediaRecorder {
   const mimeType = pickMimeType(stream.getVideoTracks().length > 0);
   return mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+}
+
+/**
+ * Grabs still frames from a stream's camera track as small JPEGs, using an off-screen video
+ * element. Frames exist only in memory until the caller drops them.
+ */
+export class FrameGrabber {
+  private video: HTMLVideoElement;
+  private canvas = document.createElement("canvas");
+  private ready: Promise<void>;
+
+  constructor(stream: MediaStream, private maxWidth = 640) {
+    this.video = document.createElement("video");
+    this.video.muted = true;
+    this.video.playsInline = true;
+    this.video.srcObject = new MediaStream(stream.getVideoTracks());
+    this.ready = this.video.play().then(() => undefined);
+  }
+
+  async grab(quality = 0.8): Promise<Blob | null> {
+    await this.ready;
+    const { videoWidth: w, videoHeight: h } = this.video;
+    if (!w || !h) return null;
+    const scale = Math.min(1, this.maxWidth / w);
+    this.canvas.width = Math.round(w * scale);
+    this.canvas.height = Math.round(h * scale);
+    const ctx = this.canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+    return new Promise((resolve) => this.canvas.toBlob(resolve, "image/jpeg", quality));
+  }
+
+  close(): void {
+    this.video.pause();
+    this.video.srcObject = null;
+    this.canvas.width = 0;
+  }
 }
 
 /**

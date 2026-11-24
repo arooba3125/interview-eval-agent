@@ -190,7 +190,6 @@ export function useDeviceCheck(config: InterviewConfig | null) {
         started_at: new Date().toISOString(),
         completed_at: null,
         results: [],
-        is_sample: false,
       });
       setupDraft.clear();
       // Release test streams; the interview room opens its own.

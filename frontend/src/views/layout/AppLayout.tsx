@@ -1,5 +1,4 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { USE_MOCK_API } from "../../services/config";
 
 export default function AppLayout() {
   return (
@@ -33,15 +32,14 @@ export default function AppLayout() {
         </div>
       </header>
 
-      {USE_MOCK_API && (
-        <div className="demo-banner" role="note">
-          <div className="container">
-            <strong>Demo mode.</strong> Questions, scores, delivery observations and suggestions are sample data
-            generated in your browser. Your recording is sent only to the backend on this computer to be transcribed,
-            and the transcript you review is used only for the experimental text emotion analysis.
-          </div>
+      <div className="demo-banner" role="note">
+        <div className="container">
+          <strong>Runs on this computer.</strong> Your recording is sent only to the local backend, where it is
+          transcribed and its delivery (pace, pauses, filler words, volume) is measured. If you opted in to camera
+          cues, a few camera frames are analysed there for approximate gaze direction and not kept. Answer-quality
+          scoring is not available yet.
         </div>
-      )}
+      </div>
 
       <main id="main" className="container app-main" tabIndex={-1}>
         <Outlet />
@@ -49,8 +47,8 @@ export default function AppLayout() {
 
       <footer className="app-footer">
         <div className="container">
-          Practice tool for a Deep Learning course project. Delivery feedback describes observable cues such as pace
-          and pauses. It does not measure confidence, emotion or job suitability.
+          Practice tool for a Deep Learning course project. Results describe what you said and how you delivered it;
+          they do not measure knowledge, correctness, confidence, anxiety, passion or job suitability.
         </div>
       </footer>
     </div>

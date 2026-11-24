@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     speech_model_dir: Path = REPO_ROOT / "models" / "checkpoints" / "faster-whisper-base.en"
     # Largest recording accepted by POST /analysis/transcribe.
     max_audio_upload_mb: int = 50
+    # Gaze estimation (approximate visual observation; weights trained on MPIIFaceGaze, CC BY-NC-SA 4.0).
+    gaze_model_dir: Path = REPO_ROOT / "models" / "checkpoints" / "gaze-mpiifacegaze-resnet-simple"
+    face_landmarker_path: Path = REPO_ROOT / "models" / "checkpoints" / "mediapipe" / "face_landmarker.task"
+    # Kept under Starlette's 1 MB in-memory spool limit, so uploaded frames never touch the disk.
+    max_frame_upload_kb: int = 1000
 
 
 settings = Settings()

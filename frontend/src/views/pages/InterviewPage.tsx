@@ -8,12 +8,13 @@ import QuestionCard from "../components/QuestionCard";
 import QuestionProgress from "../components/QuestionProgress";
 import CameraPreview from "../components/CameraPreview";
 import RecordingControls from "../components/RecordingControls";
-import AnalysisProgress from "../components/AnalysisProgress";
 import FeedbackPanel from "../components/FeedbackPanel";
 import StatusMessage from "../components/StatusMessage";
 import StepIndicator from "../components/StepIndicator";
 import PermissionHelp from "../components/PermissionHelp";
 import TranscriptInput from "../components/TranscriptInput";
+import GazeObservation from "../components/GazeObservation";
+import { useGazeObservation } from "../../viewmodels/useGazeObservation";
 
 // Step 3: show a question, record, analyse, show feedback, continue.
 export default function InterviewPage() {
@@ -23,6 +24,14 @@ export default function InterviewPage() {
   const vm = useInterviewSession(sessionId);
   const cameraOn = vm.record?.camera_enabled ?? false;
   const media = useMediaRecorder({ video: cameraOn, maxSeconds: MAX_ANSWER_SECONDS });
+  // Approximate gaze observation: only with the camera on AND the candidate's opt-in to camera cues.
+  const gaze = useGazeObservation({
+    cameraOn,
+    consent: vm.record?.session.consent_video_analysis ?? false,
+    stream: media.stream,
+    cameraError: media.status === "error",
+    recording: media.status === "recording",
+  });
   const [confirmEnd, setConfirmEnd] = useState(false);
   const feedbackHeading = useRef<HTMLHeadingElement>(null);
 
@@ -83,7 +92,7 @@ export default function InterviewPage() {
     navigate(`/interview/${sessionId}/summary`);
   }
 
-  const showQuestion = vm.question && (vm.phase === "answering" || vm.phase === "analyzing" || vm.phase === "feedback");
+  const showQuestion = vm.question && (vm.phase === "answering" || vm.phase === "saving" || vm.phase === "feedback");
 
   return (
     <div className="stack-lg">
@@ -115,7 +124,7 @@ export default function InterviewPage() {
               type="button"
               className="btn btn--ghost btn--sm"
               onClick={() => setConfirmEnd(true)}
-              disabled={media.status === "recording" || vm.phase === "analyzing"}
+              disabled={media.status === "recording" || vm.phase === "saving"}
             >
               End interview
             </button>
@@ -199,16 +208,18 @@ export default function InterviewPage() {
               </>
             )}
 
-            {vm.phase === "analyzing" && <AnalysisProgress stage={vm.stage} />}
+            {vm.phase === "saving" && <StatusMessage variant="loading" title="Saving your answer…" />}
 
-            {vm.phase === "feedback" && vm.feedback && (
+            {vm.phase === "feedback" && (
               <section className="card stack-lg" aria-labelledby="feedback-heading">
                 <h2 id="feedback-heading" ref={feedbackHeading} tabIndex={-1}>
                   Feedback on question {vm.question.index}
                 </h2>
                 <FeedbackPanel
-                  feedback={vm.feedback}
-                  liveTranscript={vm.textEmotion.transcript}
+                  transcript={vm.transcriptDraft.trim()}
+                  measuredDelivery={
+                    vm.transcription.status === "success" ? (vm.transcription.result?.delivery ?? null) : null
+                  }
                   textEmotion={{ state: vm.textEmotion, onRetry: vm.textEmotion.retry }}
                 />
                 <div className="btn-row">
@@ -228,7 +239,14 @@ export default function InterviewPage() {
 
           <aside className="room__side stack-md" aria-label="Your camera and microphone">
             {cameraOn ? (
-              <CameraPreview stream={media.stream} recording={media.status === "recording"} placeholder="Starting camera…" />
+              <>
+                <CameraPreview
+                  stream={media.stream}
+                  recording={media.status === "recording"}
+                  placeholder={media.status === "error" ? "Camera not available" : "Starting camera…"}
+                />
+                <GazeObservation state={gaze} onRetry={gaze.retry} cameraError={media.error} />
+              </>
             ) : (
               <div className="card mic-only">
                 <span className="mic-only__icon" aria-hidden="true">

@@ -22,8 +22,7 @@ export async function readDetail(res: Response): Promise<string | null> {
 }
 
 /**
- * Live call to the backend's experimental text emotion model. It runs in mock mode too:
- * it is the only real model output in the app, and it is never stored with mock history.
+ * Live call to the backend's experimental text emotion model. The transcript text is not stored.
  */
 export async function analyzeTextEmotion(transcript: string, signal?: AbortSignal): Promise<TextEmotionResult> {
   let res: Response;

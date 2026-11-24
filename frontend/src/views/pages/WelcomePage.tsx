@@ -8,13 +8,15 @@ const HOW_IT_WORKS = [
   { title: "Choose your interview", text: "Pick a job role, your experience level and the type of interview." },
   { title: "Check your devices", text: "Test your microphone and, if you want, your camera. You decide what is analysed." },
   { title: "Answer one question at a time", text: "Record, replay and re-record before you submit each answer." },
-  { title: "Review your feedback", text: "See feedback after every answer and a full report at the end." },
+  { title: "Review your results", text: "See your transcript and measured results after every answer, and a report at the end." },
 ];
 
 const FEEDBACK_PARTS = [
-  { title: "Answer quality", text: "Relevance, accuracy, completeness and the key concepts you covered or missed." },
-  { title: "Delivery observations", text: "Speaking pace, pauses and volume, described as observable cues rather than judgements." },
-  { title: "Suggestions", text: "Concrete next steps to make the same answer stronger." },
+  { title: "Transcript", text: "Your answer transcribed on this computer, for you to review and correct." },
+  { title: "Delivery observations", text: "Speaking pace, long pauses, filler words and volume change, measured from your recording." },
+  { title: "Text emotion (experimental)", text: "Emotional wording detected in your transcript, with suggestions tied to what was detected." },
+  { title: "Gaze direction (optional)", text: "An approximate visual observation from your camera, only if you opt in." },
+  { title: "Answer quality", text: "Not available yet: answers are not scored for relevance, accuracy or completeness." },
 ];
 
 export default function WelcomePage() {
@@ -28,11 +30,11 @@ export default function WelcomePage() {
         <div className="hero__text">
           <p className="eyebrow">AI interview practice</p>
           <h1 ref={headingRef} tabIndex={-1} className="hero__title">
-            Practise interviews and get clear, specific feedback on every answer.
+            Practise interviews out loud and review what you said and how you said it.
           </h1>
           <p className="lead">
-            Answer role-based questions out loud. After each answer you see what you covered, what to add, and how your
-            delivery came across in measurable terms.
+            Answer role-based questions out loud. After each answer you see your transcript and measurements of your
+            delivery, taken from your actual recording.
           </p>
           <div className="btn-row btn-row--start">
             <Link to="/setup" className="btn btn--primary btn--lg">
@@ -92,8 +94,8 @@ export default function WelcomePage() {
           ))}
         </ul>
         <p className="muted small">
-          Delivery feedback describes cues like pace and pauses. It does not claim to detect confidence, anxiety,
-          passion or job suitability.
+          These are observations of what you said and how you delivered it. They do not measure knowledge,
+          correctness, confidence, anxiety, passion or job suitability.
         </p>
       </section>
 

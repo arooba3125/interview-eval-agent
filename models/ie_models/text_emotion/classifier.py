@@ -11,6 +11,7 @@ knowledge, correctness, confidence, anxiety, passion or job suitability.
 from __future__ import annotations
 
 import json
+import threading
 from functools import lru_cache
 from pathlib import Path
 
@@ -147,8 +148,14 @@ def _cached_classifier(model_dir: str) -> TextEmotionClassifier:
     return TextEmotionClassifier(model_dir)
 
 
+_load_lock = threading.Lock()
+
+
 def load_classifier(model_dir: str | Path) -> TextEmotionClassifier:
-    return _cached_classifier(str(Path(model_dir).resolve()))
+    # The server runs requests in a thread pool: without the lock, two first requests would
+    # load the model at the same time and one could fail.
+    with _load_lock:
+        return _cached_classifier(str(Path(model_dir).resolve()))
 
 
 def analyze_text_emotion(transcript: str, model_dir: str | Path) -> TextEmotionResult:

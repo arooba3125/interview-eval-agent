@@ -1,31 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { interviewApi } from "../services/interviewApi";
 import { historyStore } from "../services/historyStore";
-import type { AnswerFeedback, Question, SessionRecord } from "../domain/types";
+import type { Question, SessionRecord } from "../domain/types";
 import { useTextEmotion } from "./useTextEmotion";
 import { useTranscription } from "./useTranscription";
 
-export type Phase = "loading" | "answering" | "analyzing" | "feedback" | "done" | "error";
+/** "saving": the answer is being recorded as answered (no analysis is simulated). */
+export type Phase = "loading" | "answering" | "saving" | "feedback" | "done" | "error";
 
-export const ANALYSIS_STAGES = [
-  "Uploading your answer",
-  "Analysing the wording of your transcript",
-  "Scoring relevance and completeness",
-  "Measuring pace, pauses and volume",
-] as const;
-
-/** ViewModel for the interview loop: question -> record -> analyse -> feedback -> next. */
+/**
+ * ViewModel for the interview loop: question -> record -> transcribe/measure -> review ->
+ * submit -> live feedback -> next. Every result shown comes from a live model.
+ */
 export function useInterviewSession(sessionId: string) {
   const [record] = useState<SessionRecord | null>(() => historyStore.get(sessionId));
   const [phase, setPhase] = useState<Phase>("loading");
   const [question, setQuestion] = useState<Question | null>(null);
-  const [feedback, setFeedback] = useState<AnswerFeedback | null>(null);
+  /** The question whose answer was just saved; live results that arrive later are added to it. */
+  const [savedQuestionId, setSavedQuestionId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [stage, setStage] = useState(0);
   const [answeredCount, setAnsweredCount] = useState(record?.results.length ?? 0);
   // Transcript of the current take: filled by speech-to-text, then reviewed and edited by the
-  // candidate before submitting. Sent to the experimental text emotion analysis; never stored.
+  // candidate before submitting. Sent to the experimental text emotion analysis; the text itself
+  // is never stored.
   const [transcriptDraft, setTranscriptDraft] = useState("");
   const textEmotion = useTextEmotion();
   const transcription = useTranscription(setTranscriptDraft);
@@ -56,7 +54,7 @@ export function useInterviewSession(sessionId: string) {
   const { analyze: analyzeTextEmotion, reset: resetTextEmotion } = textEmotion;
 
   const loadNext = useCallback(async () => {
-    setFeedback(null);
+    setSavedQuestionId(null);
     setSubmitError(null);
     setLoadError(null);
     setTranscriptDraft("");
@@ -80,42 +78,45 @@ export function useInterviewSession(sessionId: string) {
     void loadNext();
   }, [loadNext]);
 
-  // Step through the analysis messages while waiting.
+  // The text emotion result arrives after the answer is saved: keep it with that answer for the report.
   useEffect(() => {
-    if (phase !== "analyzing") return;
-    setStage(0);
-    const t = window.setInterval(() => setStage((s) => Math.min(s + 1, ANALYSIS_STAGES.length - 1)), 650);
-    return () => window.clearInterval(t);
-  }, [phase]);
+    if (!savedQuestionId) return;
+    if (textEmotion.status === "success" && textEmotion.result) {
+      historyStore.updateResult(sessionId, savedQuestionId, { text_emotion: textEmotion.result });
+    } else if (textEmotion.status === "error" || textEmotion.status === "skipped") {
+      historyStore.updateResult(sessionId, savedQuestionId, { text_emotion: null });
+    }
+  }, [sessionId, savedQuestionId, textEmotion.status, textEmotion.result]);
 
   const submit = useCallback(
     async (recording: Blob, durationS: number) => {
       if (!question) return;
       setSubmitError(null);
-      setPhase("analyzing");
-      // Runs alongside the main analysis; its result is shown in the feedback panel but never
-      // written to the session history, so mock results and live model output stay separate.
+      setPhase("saving");
+      // Live model on the reviewed transcript; shown in the feedback with its own loading state.
       void analyzeTextEmotion(transcriptDraft);
+      // Measured from the actual recording during transcription; null when it was unavailable.
+      const measured = transcription.status === "success" ? (transcription.result?.delivery ?? null) : null;
       try {
-        const fb = await interviewApi.submitAnswer(sessionId, question.id, recording);
+        await interviewApi.submitAnswer(sessionId, question.id, recording);
         if (!alive.current) return;
         historyStore.appendResult(sessionId, {
           question,
-          feedback: fb,
           answer_duration_s: durationS,
           answered_at: new Date().toISOString(),
+          measured_delivery: measured,
         });
         setAnsweredCount((n) => Math.max(n, question.index));
-        setFeedback(fb);
+        setSavedQuestionId(question.id);
         setPhase("feedback");
       } catch (e) {
         if (!alive.current) return;
         resetTextEmotion();
-        setSubmitError(e instanceof Error ? e.message : "The answer could not be analysed.");
+        setSubmitError(e instanceof Error ? e.message : "The answer could not be saved.");
         setPhase("answering");
       }
     },
-    [sessionId, question, transcriptDraft, analyzeTextEmotion, resetTextEmotion],
+    [sessionId, question, transcriptDraft, analyzeTextEmotion, resetTextEmotion, transcription.status, transcription.result],
   );
 
   const finishEarly = useCallback(() => historyStore.complete(sessionId), [sessionId]);
@@ -123,7 +124,7 @@ export function useInterviewSession(sessionId: string) {
   const isLastQuestion = !!question && question.index >= question.total;
 
   return {
-    record, phase, question, feedback, loadError, submitError, stage, answeredCount, isLastQuestion,
+    record, phase, question, loadError, submitError, answeredCount, isLastQuestion,
     transcriptDraft, setTranscriptDraft, textEmotion, transcription, transcribeTake, clearTake,
     submit, loadNext, finishEarly,
   };

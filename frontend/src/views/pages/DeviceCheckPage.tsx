@@ -195,7 +195,7 @@ export default function DeviceCheckPage() {
             <span>
               <strong>Record and analyse my spoken answers</strong> <span className="required-tag">Required</span>
               <span className="check__desc" id="consent-audio-desc">
-                Used to transcribe the answer, score its content, and measure speaking pace, pauses and volume.
+                Used to transcribe the answer, measure speaking pace, pauses, filler words and volume, and run the experimental text emotion analysis on the transcript.
               </span>
             </span>
           </label>
@@ -211,7 +211,7 @@ export default function DeviceCheckPage() {
               <strong>Also generate camera cues</strong> <span className="optional-tag">Optional</span>
               <span className="check__desc" id="consent-video-desc">
                 {vm.useCamera
-                  ? "Reports how often your face was oriented toward the camera. It is an observable cue only; it does not judge confidence, emotion or suitability. Without this, the camera is only shown to you and recorded for your replay."
+                  ? "While you record, a few camera frames are analysed on this computer to estimate your approximate gaze direction, then discarded. It is a visual observation only; it does not judge confidence, emotion, honesty or suitability. Without this, the camera is only shown to you and recorded for your replay."
                   : "Turn the camera on to choose this."}
               </span>
             </span>

@@ -1,4 +1,4 @@
-import type { AnswerFeedback, Question, Session, SessionCreate, SessionSummary } from "../domain/types";
+import type { Question, Session, SessionCreate } from "../domain/types";
 import type { InterviewApi } from "./interviewApi";
 import { API_BASE_URL } from "./config";
 
@@ -23,7 +23,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-/** Talks to the FastAPI backend. Selected when VITE_USE_MOCK_API=false. */
+/** Session and question flow from the FastAPI backend. Selected when VITE_USE_MOCK_API=false. */
 export const httpInterviewApi: InterviewApi = {
   mode: "http",
 
@@ -41,10 +41,9 @@ export const httpInterviewApi: InterviewApi = {
     form.append("question_id", questionId);
     // One webm file carries the audio track (and the video track when the camera is on).
     form.append("audio", recording, "answer.webm");
-    return request<AnswerFeedback>(`/sessions/${sessionId}/answers`, { method: "POST", body: form });
+    // The response (placeholder feedback until the backend scores answers) is not shown anywhere.
+    return request<unknown>(`/sessions/${sessionId}/answers`, { method: "POST", body: form }).then(() => undefined);
   },
-
-  summary: (sessionId: string) => request<SessionSummary>(`/sessions/${sessionId}/summary`),
 };
 
 /** Kept for existing imports. Prefer `interviewApi` from ./interviewApi. */

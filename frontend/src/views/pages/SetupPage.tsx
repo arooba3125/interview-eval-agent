@@ -89,7 +89,7 @@ export default function SetupPage() {
               Your job role <span className="required" aria-hidden="true">*</span>
             </label>
             <p className="field__hint" id="custom-role-hint">
-              Custom roles use the general software question set in demo mode.
+              Custom roles use the general software question set.
             </p>
             <input
               id="custom-role"

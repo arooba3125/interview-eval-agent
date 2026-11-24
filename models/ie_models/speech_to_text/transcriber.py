@@ -13,6 +13,7 @@ candidate's knowledge, correctness, confidence, anxiety, passion or job suitabil
 from __future__ import annotations
 
 import io
+import threading
 from functools import lru_cache
 from pathlib import Path
 
@@ -36,6 +37,19 @@ class ModelLoadError(SpeechToTextError, RuntimeError):
 
 
 SAMPLE_RATE = 16_000  # Whisper expects 16 kHz mono
+# Whisper sometimes invents a closing phrase over trailing noise or silence ("I'll see you in the
+# next one."). Such segments have a low average log-probability together with a raised no-speech
+# probability, or words with no duration; they are dropped. Real speech scored around -0.15 / 0.0.
+HALLUCINATION_LOGPROB = -1.0
+HALLUCINATION_NO_SPEECH = 0.3
+
+
+def _is_hallucination(seg) -> bool:
+    if seg.avg_logprob >= HALLUCINATION_LOGPROB:
+        return False
+    words = seg.words or []
+    zero_length = sum(1 for w in words if w.end - w.start < 0.01)
+    return seg.no_speech_prob > HALLUCINATION_NO_SPEECH or (words and zero_length >= len(words) / 2)
 
 
 class SpeechTranscriber:
@@ -61,7 +75,10 @@ class SpeechTranscriber:
         self.english_only = self.model_dir.name.endswith(".en")
 
     def transcribe(self, audio_bytes: bytes) -> Transcript:
-        audio = decode(audio_bytes)
+        return self.transcribe_samples(decode(audio_bytes))
+
+    def transcribe_samples(self, audio) -> Transcript:
+        """Transcribe already-decoded 16 kHz mono float32 samples."""
         duration = len(audio) / SAMPLE_RATE
         segments, info = self.model.transcribe(
             audio,
@@ -70,15 +87,24 @@ class SpeechTranscriber:
             vad_filter=True,  # skip long silences; uses the Silero VAD bundled with faster-whisper
             word_timestamps=True,
             condition_on_previous_text=False,  # fewer repeated phrases on long answers
+            # No temperature fallback: on a 23 s answer the retries only re-decoded trailing noise
+            # (later dropped as a hallucination) and made transcription about 3x slower.
+            temperature=0.0,
         )
         parts: list[str] = []
         words: list[tuple[str, float, float]] = []
+        probs: list[float] = []
         for seg in segments:  # a generator: decoding happens here
+            if _is_hallucination(seg):
+                continue
             parts.append(seg.text.strip())
-            words.extend((w.word.strip(), round(w.start, 2), round(w.end, 2)) for w in seg.words or [])
+            for w in seg.words or []:
+                words.append((w.word.strip(), round(float(w.start), 2), round(float(w.end), 2)))
+                probs.append(round(float(w.probability), 3))
         return Transcript(
             text=" ".join(p for p in parts if p),
             words=words,
+            word_probabilities=probs,
             duration_s=round(duration, 2),
             language=info.language,
             model=self.model_name,
@@ -106,8 +132,22 @@ def _cached_transcriber(model_dir: str) -> SpeechTranscriber:
     return SpeechTranscriber(model_dir)
 
 
+_load_lock = threading.Lock()
+
+
 def load_transcriber(model_dir: str | Path) -> SpeechTranscriber:
-    return _cached_transcriber(str(Path(model_dir).resolve()))
+    # Serialise the first load: concurrent requests must not load the model twice at once.
+    with _load_lock:
+        return _cached_transcriber(str(Path(model_dir).resolve()))
+
+
+def transcribe_with_audio(audio_bytes: bytes, model_dir: str | Path):
+    """Like transcribe(), but also returns the decoded 16 kHz samples (for delivery measurements)."""
+    if not audio_bytes:
+        raise EmptyAudioError("The recording is empty: no audio was received.")
+    transcriber = load_transcriber(model_dir)
+    audio = decode(audio_bytes)
+    return transcriber.transcribe_samples(audio), audio
 
 
 def transcribe(audio_bytes: bytes, model_dir: str | Path) -> Transcript:

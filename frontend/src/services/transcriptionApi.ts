@@ -13,7 +13,7 @@ function fileNameFor(blob: Blob): string {
 
 /**
  * Sends the existing answer recording to the backend's local Whisper model. Like the text
- * emotion call, it is live in mock mode too, and its result is never stored in the history.
+ * emotion call, it always runs live; the transcript text is never stored in the history.
  */
 export async function transcribeRecording(recording: Blob, signal?: AbortSignal): Promise<TranscriptionResult> {
   const form = new FormData();

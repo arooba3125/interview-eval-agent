@@ -6,6 +6,7 @@ from .transcriber import (
     SpeechTranscriber,
     load_transcriber,
     transcribe,
+    transcribe_with_audio,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "SpeechTranscriber",
     "load_transcriber",
     "transcribe",
+    "transcribe_with_audio",
 ]

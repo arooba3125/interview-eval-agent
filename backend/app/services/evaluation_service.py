@@ -13,10 +13,11 @@ class EvaluationService:
         self, session_id: str, question_id: str, audio: UploadFile, video: UploadFile | None
     ) -> AnswerFeedback:
         audio_bytes = await audio.read()
-        transcript = self.analysis.transcribe(audio_bytes)
-        # TODO: score content, analyse voice, analyse video (if consented), build suggestions.
+        transcript, _delivery = self.analysis.transcribe(audio_bytes)
+        # TODO: score content, analyse video (if consented), build suggestions. Until then the
+        # scores below are placeholders (0.0 / "unknown"); the frontend does not display them.
         content = ContentAssessment(
-            transcript=transcript,
+            transcript=transcript.text,
             relevance=0.0,
             correctness=0.0,
             completeness=0.0,

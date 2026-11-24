@@ -375,10 +375,17 @@ main:focus {
   white-space: nowrap;
   border: 1px solid transparent;
 }
-.badge--sample {
-  background: var(--c-warning-soft);
-  color: var(--c-warning);
-  border-color: #f3d19c;
+/* A feature that is not implemented yet: neutral, so it is not mistaken for a result. */
+.badge--unavailable {
+  background: var(--c-surface-2);
+  color: var(--c-muted);
+  border-color: currentColor;
+}
+.suggestions--plain {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: var(--space-2);
 }
 .badge--experimental {
   background: var(--c-info-soft);
@@ -1358,11 +1365,51 @@ audio.replay__media {
   color: var(--c-muted);
   font-size: 0.92rem;
 }
+.observation--na .observation__value {
+  color: var(--c-muted);
+  font-weight: 600;
+}
+.badge--measured {
+  background: #e7f6ec;
+  color: #166534;
+  border-color: currentColor;
+}
 .observations__group {
   font-weight: 700;
   font-size: 0.9rem;
   margin: var(--space-4) 0 var(--space-2);
 }
+.gaze .feedback__head {
+  flex-wrap: wrap;
+}
+.gaze .cue-notice {
+  margin-top: 0;
+}
+.gaze__now {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+.gaze__now strong {
+  font-size: 1.15rem;
+}
+.gaze-tally {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.92rem;
+}
+.gaze-tally li {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--c-border, #e2e8f0);
+}
+.gaze-tally__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
 .cue-notice {
   margin-top: var(--space-4);
   padding: var(--space-3) var(--space-4);

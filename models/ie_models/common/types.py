@@ -6,8 +6,52 @@ from dataclasses import dataclass, field
 class Transcript:
     text: str
     words: list[tuple[str, float, float]] = field(default_factory=list)  # (word, start_s, end_s)
+    word_probabilities: list[float] = field(default_factory=list)  # recogniser confidence per word, 0..1
     duration_s: float = 0.0  # length of the decoded audio
     language: str = "en"
+    model: str = ""
+
+
+@dataclass
+class DeliveryMetric:
+    """One delivery measurement, or "not_available" with the reason in `note`. Never a verdict."""
+
+    signal: str  # speaking_pace | long_pauses | filler_words | volume
+    status: str  # measured | not_available
+    value: float | str | None = None
+    unit: str = ""
+    note: str = ""
+    details: dict = field(default_factory=dict)
+
+
+@dataclass
+class DeliveryReport:
+    metrics: list[DeliveryMetric]
+    speaking_s: float = 0.0
+    mean_word_confidence: float | None = None
+
+
+@dataclass
+class GazeFrame:
+    """Approximate gaze estimate for one camera frame (a visual observation only)."""
+
+    face_detected: bool
+    direction: str | None = None  # toward_screen | left | right | up | down
+    horizontal_deg: float = 0.0  # + = toward the image's right (the candidate's own left)
+    vertical_deg: float = 0.0  # + = up
+    confidence: float = 0.0  # heuristic 0..1, not a calibrated probability
+
+
+@dataclass
+class GazeResult:
+    """Combined estimate for a short frame sequence."""
+
+    direction: str | None  # None when no face was found in any frame
+    confidence: float
+    horizontal_deg: float = 0.0
+    vertical_deg: float = 0.0
+    frames: list[GazeFrame] = field(default_factory=list)
+    face_detected: bool = False
     model: str = ""
 
 

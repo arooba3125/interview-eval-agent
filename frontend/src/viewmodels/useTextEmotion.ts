@@ -17,7 +17,7 @@ const IDLE: TextEmotionState = { status: "idle", result: null, error: null, tran
 
 /**
  * ViewModel for the experimental text emotion analysis of one answer. Results live in
- * memory only: they are live model output and are kept apart from the mock session history.
+ * memory here; the interview viewmodel saves the result (not the transcript) with the answer.
  */
 export function useTextEmotion() {
   const [state, setState] = useState<TextEmotionState>(IDLE);

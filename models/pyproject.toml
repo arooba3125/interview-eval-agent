@@ -14,7 +14,7 @@ speech = ["faster-whisper>=1.1"]
 scoring = ["sentence-transformers"]
 text = ["torch", "transformers>=4.46"]
 vocal = ["librosa", "soundfile"]
-visual = ["mediapipe", "opencv-python"]
+visual = ["mediapipe>=0.10.14", "torch", "safetensors"]  # mediapipe brings opencv-contrib-python
 dev = ["pytest", "jupyter"]
 
 [tool.setuptools.packages.find]

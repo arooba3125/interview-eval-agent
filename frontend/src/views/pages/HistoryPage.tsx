@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { useSessionHistory } from "../../viewmodels/useSessionHistory";
-import { USE_MOCK_API } from "../../services/config";
 import SessionCard from "../components/SessionCard";
 import StatusMessage from "../components/StatusMessage";
 
@@ -16,11 +15,7 @@ export default function HistoryPage() {
           <h1 ref={headingRef} tabIndex={-1}>
             Previous sessions
           </h1>
-          <p className="lead">
-            {USE_MOCK_API
-              ? "Sessions saved in this browser, plus labelled sample sessions for the demo."
-              : "Sessions saved in this browser."}
-          </p>
+          <p className="lead">Your practice sessions saved in this browser.</p>
         </div>
         {vm.totalCount > 0 && (
           <div className="field field--inline">

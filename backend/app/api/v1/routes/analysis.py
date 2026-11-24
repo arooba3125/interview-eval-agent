@@ -3,11 +3,14 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.core.config import settings
 from app.schemas.text_emotion import TextEmotionRequest, TextEmotionResponse
+from app.schemas.gaze import GazeResponse
 from app.schemas.transcription import TranscriptionResponse
 from app.services.analysis_service import (
     AnalysisService,
     EmptyTranscriptError,
+    GazeUnavailableError,
     InvalidAudioError,
+    InvalidFrameError,
     SpeechToTextUnavailableError,
     TextEmotionUnavailableError,
 )
@@ -17,9 +20,41 @@ service = AnalysisService()
 
 
 @router.post(
+    "/gaze",
+    response_model=GazeResponse,
+    summary="Approximate gaze direction from camera frames (local, nothing stored)",
+    responses={
+        413: {"description": "A frame is larger than the upload limit"},
+        422: {"description": "No frames, more than 5, or a frame that is not an image"},
+        503: {"description": "Gaze model or face landmarker could not be loaded"},
+    },
+)
+def estimate_gaze(
+    frames: list[UploadFile] = File(..., description="1 to 5 JPEG or PNG camera frames, as repeated 'frames' fields"),
+) -> GazeResponse:
+    # Frames are read into memory, analysed and dropped; they are never written to disk or kept.
+    limit = settings.max_frame_upload_kb * 1024
+    data: list[bytes] = []
+    for f in frames:
+        chunk = f.file.read(limit + 1)
+        if len(chunk) > limit:
+            raise HTTPException(status_code=413, detail=f"A frame is larger than {settings.max_frame_upload_kb} KB.")
+        data.append(chunk)
+    try:
+        result = service.estimate_gaze(data)
+    except InvalidFrameError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except GazeUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=f"Gaze model unavailable: {exc}") from exc
+    finally:
+        data.clear()
+    return GazeResponse.from_result(result)
+
+
+@router.post(
     "/transcribe",
     response_model=TranscriptionResponse,
-    summary="Transcribe a recorded answer (local Whisper)",
+    summary="Transcribe a recorded answer and measure its delivery (local Whisper)",
     responses={
         413: {"description": "Recording is larger than the upload limit"},
         422: {"description": "Empty recording, or audio that cannot be decoded"},
@@ -33,12 +68,12 @@ def transcribe_answer(audio: UploadFile = File(..., description="The recording (
     if len(data) > limit:
         raise HTTPException(status_code=413, detail=f"The recording is larger than {settings.max_audio_upload_mb} MB.")
     try:
-        result = service.transcribe(data)
+        result, delivery = service.transcribe(data)
     except InvalidAudioError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except SpeechToTextUnavailableError as exc:
         raise HTTPException(status_code=503, detail=f"Speech-to-text model unavailable: {exc}") from exc
-    return TranscriptionResponse.from_result(result)
+    return TranscriptionResponse.from_result(result, delivery)
 
 
 @router.post(

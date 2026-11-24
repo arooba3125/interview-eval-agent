@@ -26,7 +26,7 @@ adapter (`services/analysis_service.py`), so a model change does not touch the r
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-pip install -e "../models[text,speech]"  # the ML package (+ torch/transformers, faster-whisper)
+pip install -e "../models[text,speech,visual]"  # the ML package (+ torch/transformers, faster-whisper, mediapipe)
 uvicorn app.main:app --reload
 ```
 
@@ -49,6 +49,37 @@ nothing is sent off the machine.
 
 ```bash
 curl -F "audio=@answer.webm;type=audio/webm" http://localhost:8000/api/v1/analysis/transcribe
+```
+
+### Delivery measurements
+
+The same response carries `delivery`: `metrics` for `speaking_pace`, `long_pauses`,
+`filler_words` and `volume`, each with `status` (`measured` or `not_available`), `value`
+(null when not available), `unit`, a plain-language `note` (or the reason it could not be
+calculated) and `details` (e.g. pause times, filler breakdown, dB change). They are computed
+from the same upload and decoded audio as the transcript, so nothing is uploaded twice.
+Thresholds are documented in `models/README.md`. If measuring fails, every metric is
+`not_available`; values are never invented.
+
+## Gaze direction (approximate visual observation)
+
+`POST /api/v1/analysis/gaze` takes 1–5 camera frames as repeated multipart fields `frames`
+(JPEG or PNG, each at most `MAX_FRAME_UPLOAD_KB`, default 1000 KB) and returns `direction`
+(`toward_screen`, `left`, `right`, `up`, `down`, or `null` when no face is found),
+`confidence` (a 0–1 heuristic from agreement across frames, not a calibrated probability),
+the angles, per-frame results, `"processed_locally": true` and `"frames_stored": false`.
+Every response carries a notice that it is **not** a psychological or candidate assessment,
+and the dataset licence (MPIIFaceGaze, CC BY-NC-SA 4.0, non-commercial; see `models/README.md`).
+
+- Frames are read into memory (kept under Starlette's 1 MB spool limit, so they never touch
+  the disk), analysed and dropped. Nothing is logged or saved.
+- Models: `GAZE_MODEL_DIR` and `FACE_LANDMARKER_PATH`, defaulting to `../models/checkpoints/`.
+  Loaded on the first request (about 15 s); then about 0.2 s per frame on CPU.
+- Errors: no frames, more than 5, or a non-image → `422`; frame too large → `413`; model files
+  missing → `503`.
+
+```bash
+curl -F "frames=@f1.jpg;type=image/jpeg" -F "frames=@f2.jpg;type=image/jpeg" http://localhost:8000/api/v1/analysis/gaze
 ```
 
 ## Experimental text emotion analysis

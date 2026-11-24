@@ -1,19 +1,19 @@
-import type { AnswerFeedback, Question, Session, SessionCreate, SessionSummary } from "../domain/types";
-import { USE_MOCK_API } from "./config";
+import type { Question, Session, SessionCreate } from "../domain/types";
+import { USE_LOCAL_QUESTIONS } from "./config";
 import { httpInterviewApi } from "./apiClient";
-import { mockInterviewApi } from "./mock/mockInterviewApi";
+import { localInterviewApi } from "./local/localInterviewApi";
 
 /**
- * The one door from viewmodels to the backend. Both implementations follow the
- * FastAPI routes in backend/app/api/v1/routes, so swapping mock for HTTP is a config change.
+ * The one door from viewmodels to the interview flow (sessions, questions, answer progress).
+ * It returns no feedback: results come from the live analysis services (transcription,
+ * delivery, text emotion, gaze), which are called directly.
  */
 export interface InterviewApi {
-  readonly mode: "mock" | "http";
+  readonly mode: "local" | "http";
   createSession(body: SessionCreate): Promise<Session>;
   nextQuestion(sessionId: string): Promise<Question | null>;
-  /** `recording` is the webm from MediaRecorder: audio, plus video when the camera is on. */
-  submitAnswer(sessionId: string, questionId: string, recording: Blob): Promise<AnswerFeedback>;
-  summary(sessionId: string): Promise<SessionSummary>;
+  /** Marks the question answered. `recording` is the webm from MediaRecorder. */
+  submitAnswer(sessionId: string, questionId: string, recording: Blob): Promise<void>;
 }
 
-export const interviewApi: InterviewApi = USE_MOCK_API ? mockInterviewApi : httpInterviewApi;
+export const interviewApi: InterviewApi = USE_LOCAL_QUESTIONS ? localInterviewApi : httpInterviewApi;

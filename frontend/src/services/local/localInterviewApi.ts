@@ -1,32 +1,29 @@
-// Demo-mode implementation of InterviewApi. Same shapes as the FastAPI routes, but all
-// questions and feedback are SAMPLE data generated in the browser.
+// Local implementation of InterviewApi: sessions and questions run in the browser, using the
+// practice question bank. It produces no feedback or scores: every result shown in the app comes
+// from the live models in the backend (transcription, delivery measurements, text emotion, gaze).
 
 import type { InterviewApi } from "../interviewApi";
 import type { Question, Session } from "../../domain/types";
-import { historyStore } from "../historyStore";
-import { buildSummary, generateFeedback } from "./mockFeedback";
-import { pickQuestions, type MockQuestion } from "./questionBank";
+import { pickQuestions, type PracticeQuestion } from "./questionBank";
 
-interface MockSessionState {
+interface LocalSessionState {
   session: Session;
-  questions: MockQuestion[];
+  questions: PracticeQuestion[];
   answered: number;
 }
 
+// Key kept from earlier versions so sessions in progress can still be resumed.
 const KEY = "ie.mock.sessions.v1";
-const ANALYSIS_DELAY_MS = 2400;
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function load(): Record<string, MockSessionState> {
+function load(): Record<string, LocalSessionState> {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "{}") as Record<string, MockSessionState>;
+    return JSON.parse(localStorage.getItem(KEY) ?? "{}") as Record<string, LocalSessionState>;
   } catch {
     return {};
   }
 }
 
-function save(all: Record<string, MockSessionState>): void {
+function save(all: Record<string, LocalSessionState>): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(all));
   } catch {
@@ -34,22 +31,21 @@ function save(all: Record<string, MockSessionState>): void {
   }
 }
 
-function getState(sessionId: string): MockSessionState {
+function getState(sessionId: string): LocalSessionState {
   const state = load()[sessionId];
   if (!state) throw new Error("This practice session could not be found. It may have been started in another browser.");
   return state;
 }
 
-function toQuestion(sessionId: string, state: MockSessionState, i: number): Question {
+function toQuestion(sessionId: string, state: LocalSessionState, i: number): Question {
   const q = state.questions[i];
   return { id: `${sessionId}-q${i + 1}`, text: q.text, topic: q.topic, index: i + 1, total: state.questions.length };
 }
 
-export const mockInterviewApi: InterviewApi = {
-  mode: "mock",
+export const localInterviewApi: InterviewApi = {
+  mode: "local",
 
   async createSession(body) {
-    await delay(500);
     const id = crypto.randomUUID?.() ?? `s-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const session: Session = {
       id,
@@ -63,31 +59,18 @@ export const mockInterviewApi: InterviewApi = {
   },
 
   async nextQuestion(sessionId) {
-    await delay(350);
     const state = getState(sessionId);
     return state.answered < state.questions.length ? toQuestion(sessionId, state, state.answered) : null;
   },
 
   async submitAnswer(sessionId, questionId, recording) {
     if (recording.size === 0) throw new Error("The recording was empty. Record your answer again.");
-    await delay(ANALYSIS_DELAY_MS);
     const all = load();
     const state = all[sessionId];
     if (!state) throw new Error("This practice session could not be found.");
     const i = state.questions.findIndex((_, n) => `${sessionId}-q${n + 1}` === questionId);
     if (i < 0) throw new Error("Unknown question.");
-    const q = state.questions[i];
     state.answered = Math.max(state.answered, i + 1);
     save(all);
-    return generateFeedback(questionId, q, {
-      seed: questionId,
-      withCameraCues: state.session.consent_video_analysis,
-      behavioural: q.kind === "behavioural",
-    });
-  },
-
-  async summary(sessionId) {
-    await delay(600);
-    return buildSummary(sessionId, historyStore.get(sessionId)?.results ?? []);
   },
 };

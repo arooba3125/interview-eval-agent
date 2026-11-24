@@ -34,10 +34,19 @@ in `localStorage` (`src/services/historyStore.ts`).
 To use the FastAPI backend instead, set `VITE_USE_MOCK_API=false` in `.env`.
 Viewmodels only talk to `services/interviewApi.ts`, so no view code changes.
 
+## Speech-to-text (live, local)
+
+When a take is recorded, `useTranscription` sends the same recording (no second recorder)
+to `POST /api/v1/analysis/transcribe`. The backend runs Whisper base.en through
+faster-whisper on the CPU, so audio never leaves the machine. The text fills the
+**Answer transcript** box, where the candidate reviews and edits it before submitting;
+Submit is disabled while transcription runs. Loading, error (retry, or type it), and
+"no speech detected" states are shown. "Record again" clears the transcript. Like the text
+emotion result, the transcript is held in memory only and never written to history.
+
 ## Experimental text emotion analysis (live)
 
-The interview screen has an optional **Answer transcript** box (speech-to-text is not
-connected yet). When an answer is submitted with a transcript, `useTextEmotion` sends it
+When an answer is submitted with a transcript (transcribed and/or typed), `useTextEmotion` sends it
 to `POST /api/v1/analysis/text-emotion` through the Vite `/api` proxy, in mock mode too,
 since it is the one real model in the app. The result appears in its own "Text emotion
 analysis" section of the feedback panel, badged *Experimental · live model*, with loading,

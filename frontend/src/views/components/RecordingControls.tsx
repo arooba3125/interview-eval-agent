@@ -14,6 +14,8 @@ interface Props {
   recording: Recording | null;
   hasVideo: boolean;
   disabled?: boolean;
+  /** Shown on the submit button and disables it, e.g. while the take is being transcribed. */
+  submitBusyLabel?: string;
   onRecord: () => void;
   onStop: () => void;
   onDiscard: () => void;
@@ -29,8 +31,8 @@ export default function RecordingControls(p: Props) {
   // Keep keyboard focus on the next sensible control as the state changes.
   useEffect(() => {
     if (isRecording) stopRef.current?.focus();
-    else if (p.status === "recorded") submitRef.current?.focus();
-  }, [isRecording, p.status]);
+    else if (p.status === "recorded" && !p.submitBusyLabel) submitRef.current?.focus();
+  }, [isRecording, p.status, p.submitBusyLabel]);
 
   const announcement =
     p.status === "recording" ? "Recording started" : p.status === "recorded" ? "Recording stopped. Review your answer, then submit." : "";
@@ -91,8 +93,14 @@ export default function RecordingControls(p: Props) {
             <button type="button" className="btn btn--secondary" onClick={p.onDiscard} disabled={p.disabled}>
               Record again
             </button>
-            <button ref={submitRef} type="button" className="btn btn--primary" onClick={p.onSubmit} disabled={p.disabled}>
-              Submit answer
+            <button
+              ref={submitRef}
+              type="button"
+              className="btn btn--primary"
+              onClick={p.onSubmit}
+              disabled={p.disabled || !!p.submitBusyLabel}
+            >
+              {p.submitBusyLabel ?? "Submit answer"}
             </button>
           </div>
         </div>

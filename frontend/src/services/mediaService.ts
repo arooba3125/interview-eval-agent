@@ -33,19 +33,62 @@ function toMediaError(e: unknown): MediaAccessError {
   }
 }
 
-export async function openStream(opts: { audio: boolean; video: boolean }): Promise<MediaStream> {
+const MIC_KEY = "iea.microphoneId";
+
+/** The microphone the candidate picked on the device check page (kept on this device only). */
+export const micPreference = {
+  get(): string | null {
+    try {
+      return localStorage.getItem(MIC_KEY);
+    } catch {
+      return null;
+    }
+  },
+  set(id: string | null): void {
+    try {
+      if (id) localStorage.setItem(MIC_KEY, id);
+      else localStorage.removeItem(MIC_KEY);
+    } catch {
+      /* storage unavailable: the choice lasts for this page only */
+    }
+  },
+};
+
+export interface MicOption {
+  id: string;
+  label: string;
+}
+
+/** Audio inputs the browser can see. Labels are only filled in once permission is granted. */
+export async function listMicrophones(): Promise<MicOption[]> {
+  if (!navigator.mediaDevices?.enumerateDevices) return [];
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  return devices
+    .filter((d) => d.kind === "audioinput" && d.deviceId)
+    .map((d, i) => ({ id: d.deviceId, label: d.label || `Microphone ${i + 1}` }));
+}
+
+export async function openStream(opts: { audio: boolean; video: boolean; micId?: string | null }): Promise<MediaStream> {
   if (!window.isSecureContext) {
     throw new MediaAccessError("insecure", "Camera and microphone need a secure page (https or localhost).");
   }
   if (!isMediaSupported()) {
     throw new MediaAccessError("unsupported", "This browser cannot record audio. Try a recent Chrome, Edge, Firefox or Safari.");
   }
+  const audio: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: true };
+  if (opts.micId) audio.deviceId = { exact: opts.micId };
   try {
     return await navigator.mediaDevices.getUserMedia({
-      audio: opts.audio ? { echoCancellation: true, noiseSuppression: true } : false,
+      audio: opts.audio ? audio : false,
       video: opts.video ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } : false,
     });
   } catch (e) {
+    // A saved microphone that is no longer plugged in: forget it and fall back to the default.
+    const name = e instanceof DOMException ? e.name : "";
+    if (opts.micId && (name === "OverconstrainedError" || name === "NotFoundError")) {
+      micPreference.set(null);
+      return openStream({ ...opts, micId: null });
+    }
     throw toMediaError(e);
   }
 }

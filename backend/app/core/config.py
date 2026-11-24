@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     text_emotion_model_dir: Path = (
         REPO_ROOT / "model-training" / "text" / "outputs" / "bert-goemotions-full" / "model"
     )
+    # Pretrained Whisper weights for faster-whisper (speech-to-text runs locally on the CPU).
+    speech_model_dir: Path = REPO_ROOT / "models" / "checkpoints" / "faster-whisper-base.en"
+    # Largest recording accepted by POST /analysis/transcribe.
+    max_audio_upload_mb: int = 50
 
 
 settings = Settings()

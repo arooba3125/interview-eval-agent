@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 class Transcript:
     text: str
     words: list[tuple[str, float, float]] = field(default_factory=list)  # (word, start_s, end_s)
+    duration_s: float = 0.0  # length of the decoded audio
+    language: str = "en"
+    model: str = ""
 
 
 @dataclass

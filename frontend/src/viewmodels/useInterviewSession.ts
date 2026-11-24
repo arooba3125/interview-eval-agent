@@ -3,12 +3,13 @@ import { interviewApi } from "../services/interviewApi";
 import { historyStore } from "../services/historyStore";
 import type { AnswerFeedback, Question, SessionRecord } from "../domain/types";
 import { useTextEmotion } from "./useTextEmotion";
+import { useTranscription } from "./useTranscription";
 
 export type Phase = "loading" | "answering" | "analyzing" | "feedback" | "done" | "error";
 
 export const ANALYSIS_STAGES = [
   "Uploading your answer",
-  "Transcribing speech",
+  "Analysing the wording of your transcript",
   "Scoring relevance and completeness",
   "Measuring pace, pauses and volume",
 ] as const;
@@ -23,9 +24,27 @@ export function useInterviewSession(sessionId: string) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
   const [answeredCount, setAnsweredCount] = useState(record?.results.length ?? 0);
-  // Optional typed transcript for the experimental text emotion analysis (live model, not stored).
+  // Transcript of the current take: filled by speech-to-text, then reviewed and edited by the
+  // candidate before submitting. Sent to the experimental text emotion analysis; never stored.
   const [transcriptDraft, setTranscriptDraft] = useState("");
   const textEmotion = useTextEmotion();
+  const transcription = useTranscription(setTranscriptDraft);
+  const { transcribe, reset: resetTranscription } = transcription;
+
+  /** A new take was recorded: transcribe it locally so the candidate can review the text. */
+  const transcribeTake = useCallback(
+    (recording: Blob) => {
+      setTranscriptDraft("");
+      void transcribe(recording);
+    },
+    [transcribe],
+  );
+
+  /** The take was thrown away: drop its transcript too. */
+  const clearTake = useCallback(() => {
+    resetTranscription();
+    setTranscriptDraft("");
+  }, [resetTranscription]);
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -42,6 +61,7 @@ export function useInterviewSession(sessionId: string) {
     setLoadError(null);
     setTranscriptDraft("");
     resetTextEmotion();
+    resetTranscription();
     setPhase("loading");
     try {
       const q = await interviewApi.nextQuestion(sessionId);
@@ -54,7 +74,7 @@ export function useInterviewSession(sessionId: string) {
       setLoadError(e instanceof Error ? e.message : "Could not load the next question.");
       setPhase("error");
     }
-  }, [sessionId, resetTextEmotion]);
+  }, [sessionId, resetTextEmotion, resetTranscription]);
 
   useEffect(() => {
     void loadNext();
@@ -104,7 +124,7 @@ export function useInterviewSession(sessionId: string) {
 
   return {
     record, phase, question, feedback, loadError, submitError, stage, answeredCount, isLastQuestion,
-    transcriptDraft, setTranscriptDraft, textEmotion,
+    transcriptDraft, setTranscriptDraft, textEmotion, transcription, transcribeTake, clearTake,
     submit, loadNext, finishEarly,
   };
 }

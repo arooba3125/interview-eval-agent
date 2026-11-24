@@ -5,7 +5,7 @@ import StatusMessage from "./StatusMessage";
 const TOP_N = 6;
 
 const STANDING_NOTICE =
-  "Experimental text emotion analysis. It describes emotions expressed in the words of your typed transcript, " +
+  "Experimental text emotion analysis. It describes emotions expressed in the words of your reviewed transcript, " +
   "using a model trained on Reddit comments. It is not a measure of your knowledge, correctness, confidence, " +
   "anxiety, passion or job suitability, and it does not change any other part of your feedback.";
 
@@ -97,8 +97,8 @@ export default function TextEmotionSection({ state, onRetry, headingLevel = 3 }:
 
       {(state.status === "idle" || state.status === "skipped") && (
         <p className="muted">
-          No transcript was typed for this answer, so the text emotion analysis did not run. Add a transcript before
-          submitting the next answer to try it.
+          This answer was submitted with an empty transcript, so the text emotion analysis did not run. Speak or type
+          your next answer before submitting to try it.
         </p>
       )}
 

@@ -39,13 +39,15 @@ interface Props {
    * screen; reports and history (sample data) never show it.
    */
   textEmotion?: { state: TextEmotionState; onRetry: () => void };
+  /** The transcript the candidate reviewed and submitted (interview screen only, not stored). */
+  liveTranscript?: string;
 }
 
 /**
  * Per-question feedback in three separate parts. Content scores assess the answer;
  * delivery items are observations, never verdicts about the person.
  */
-export default function FeedbackPanel({ feedback, headingLevel = 3, textEmotion }: Props) {
+export default function FeedbackPanel({ feedback, headingLevel = 3, textEmotion, liveTranscript }: Props) {
   const { content, delivery, suggestions } = feedback;
   const H = `h${headingLevel}` as "h3" | "h4";
   const voice = delivery.filter((d) => signalInfo(d).group === "voice");
@@ -100,10 +102,18 @@ export default function FeedbackPanel({ feedback, headingLevel = 3, textEmotion 
           <summary>Transcript</summary>
           {content.transcript ? (
             <p>{content.transcript}</p>
+          ) : liveTranscript ? (
+            <>
+              <p>{liveTranscript}</p>
+              <p className="muted small">
+                Your reviewed transcript (local speech-to-text, with your edits). The scores above are sample results
+                and were not calculated from it.
+              </p>
+            </>
           ) : (
             <p className="muted">
               {USE_MOCK_API
-                ? "No transcript in demo mode. Speech-to-text runs in the backend, which is not connected."
+                ? "No transcript was submitted for this answer. The scores above are sample results."
                 : "No transcript was returned for this answer."}
             </p>
           )}

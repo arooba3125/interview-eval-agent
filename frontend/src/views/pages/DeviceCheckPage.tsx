@@ -81,6 +81,27 @@ export default function DeviceCheckPage() {
 
           {vm.mic.status === "ready" ? (
             <div className="stack-md">
+              {vm.microphones.length > 1 && (
+                <div className="field">
+                  <label className="field__label" htmlFor="mic-select">
+                    Which microphone
+                  </label>
+                  <select
+                    id="mic-select"
+                    className="input"
+                    value={vm.micId ?? ""}
+                    onChange={(e) => vm.chooseMic(e.target.value)}
+                  >
+                    {vm.micId && !vm.microphones.some((m) => m.id === vm.micId) && <option value={vm.micId}>Default</option>}
+                    {vm.microphones.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="field__hint">If the level does not move when you speak, try another one. Your choice is used for the interview.</p>
+                </div>
+              )}
               <div className="mic-check">
                 <MicLevelMeter level={vm.level} active />
                 <p className="small" aria-live="polite">
@@ -102,6 +123,14 @@ export default function DeviceCheckPage() {
                 </button>
                 {vm.testClip.url && vm.testClip.status === "ready" && (
                   <audio src={vm.testClip.url} controls aria-label="Play back your microphone test clip" />
+                )}
+                {vm.testClip.status === "ready" && vm.testClipSilent && (
+                  <StatusMessage variant="warning" compact title="No sound was picked up">
+                    This microphone sent silence.{" "}
+                    {vm.microphones.length > 1
+                      ? "Choose another microphone above, then record the test clip again."
+                      : "Check that it is plugged in and not muted, then record again."}
+                  </StatusMessage>
                 )}
               </div>
             </div>

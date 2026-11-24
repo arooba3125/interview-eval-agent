@@ -7,7 +7,8 @@ export const MAX_TRANSCRIPT_CHARS = 20_000;
 
 const UNREACHABLE = "Could not reach the backend for text emotion analysis. Check that it is running on port 8000.";
 
-async function readDetail(res: Response): Promise<string | null> {
+/** FastAPI error `detail` as one sentence, or null when the response has no JSON body. */
+export async function readDetail(res: Response): Promise<string | null> {
   try {
     const body = (await res.json()) as { detail?: unknown };
     if (typeof body.detail === "string") return body.detail;

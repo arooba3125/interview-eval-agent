@@ -72,6 +72,22 @@ export interface TextEmotionResult {
   model: string;
 }
 
+/**
+ * Response of POST /api/v1/analysis/transcribe: a machine transcription of the recording,
+ * made by a local Whisper model. It records what was said; it assesses nothing.
+ */
+export interface TranscriptionResult {
+  /** Empty when no speech was detected. */
+  transcript: string;
+  speech_detected: boolean;
+  duration_s: number;
+  language: string;
+  words: { word: string; start_s: number; end_s: number }[];
+  model: string;
+  processed_locally: boolean;
+  notice: string;
+}
+
 export interface SessionSummary {
   session_id: string;
   strengths: string[];

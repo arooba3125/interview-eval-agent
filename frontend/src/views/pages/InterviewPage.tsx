@@ -31,6 +31,12 @@ export default function InterviewPage() {
     if (vm.record) void media.open();
   }, [vm.record]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Each new take is transcribed (reusing the recording); discarding it clears the transcript.
+  useEffect(() => {
+    if (media.recording) vm.transcribeTake(media.recording.blob);
+    else vm.clearTake();
+  }, [media.recording]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (vm.phase === "feedback") feedbackHeading.current?.focus();
     if (vm.phase === "done") {
@@ -161,13 +167,20 @@ export default function InterviewPage() {
                     maxSeconds={MAX_ANSWER_SECONDS}
                     recording={media.recording}
                     hasVideo={cameraOn}
+                    submitBusyLabel={vm.transcription.status === "loading" ? "Transcribing…" : undefined}
                     onRecord={() => void media.start()}
                     onStop={media.stop}
                     onDiscard={media.discard}
                     onSubmit={submit}
                   />
                 )}
-                <TranscriptInput value={vm.transcriptDraft} onChange={vm.setTranscriptDraft} />
+                <TranscriptInput
+                  value={vm.transcriptDraft}
+                  onChange={vm.setTranscriptDraft}
+                  transcription={vm.transcription}
+                  hasRecording={!!media.recording}
+                  onRetry={vm.transcription.retry}
+                />
                 {vm.submitError && (
                   <StatusMessage
                     variant="error"
@@ -195,6 +208,7 @@ export default function InterviewPage() {
                 </h2>
                 <FeedbackPanel
                   feedback={vm.feedback}
+                  liveTranscript={vm.textEmotion.transcript}
                   textEmotion={{ state: vm.textEmotion, onRetry: vm.textEmotion.retry }}
                 />
                 <div className="btn-row">

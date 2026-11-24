@@ -12,7 +12,7 @@ so each can be trained, tested and replaced on its own.
 
 ```
 ie_models/
-  speech_to_text/    audio -> transcript (+ word timestamps)          e.g. Whisper
+  speech_to_text/    audio -> transcript (+ word timestamps)          Whisper base.en via faster-whisper (local, CPU)
   answer_scoring/    question + transcript -> relevance, correctness,
                      completeness, knowledge level, missing concepts   e.g. sentence embeddings + LLM/rubric
   vocal_analysis/    audio -> pace (wpm), pauses, volume, pitch variation   e.g. librosa / pyannote
@@ -28,6 +28,20 @@ data/                datasets (git-ignored)
 checkpoints/         trained weights (git-ignored)
 tests/
 ```
+
+## Speech-to-text setup
+
+`pip install -e "../models[speech]"` installs faster-whisper (with CTranslate2, PyAV for decoding
+webm/opus/mp4 without a system ffmpeg, and onnxruntime for the bundled voice-activity filter).
+The pretrained weights (about 140 MB) are downloaded once into the git-ignored `checkpoints/`:
+
+```bash
+python -c "from huggingface_hub import snapshot_download; snapshot_download('Systran/faster-whisper-base.en', local_dir='checkpoints/faster-whisper-base.en')"
+```
+
+After that, transcription runs entirely on this machine (int8 on CPU, roughly 0.15x real time
+on a laptop i7 once loaded) and makes no network calls. The transcript records what was said;
+it does not assess knowledge, correctness, confidence, anxiety, passion or job suitability.
 
 ## Design rule for delivery signals
 

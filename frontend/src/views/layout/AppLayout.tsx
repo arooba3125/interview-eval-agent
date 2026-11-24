@@ -36,9 +36,9 @@ export default function AppLayout() {
       {USE_MOCK_API && (
         <div className="demo-banner" role="note">
           <div className="container">
-            <strong>Demo mode.</strong> Questions and feedback are sample data generated in your browser. Your answers
-            are recorded for replay but not analysed or uploaded. Only a transcript you choose to type is sent to the
-            local backend, for the experimental text emotion analysis.
+            <strong>Demo mode.</strong> Questions, scores, delivery observations and suggestions are sample data
+            generated in your browser. Your recording is sent only to the backend on this computer to be transcribed,
+            and the transcript you review is used only for the experimental text emotion analysis.
           </div>
         </div>
       )}

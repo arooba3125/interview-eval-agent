@@ -26,11 +26,30 @@ adapter (`services/analysis_service.py`), so a model change does not touch the r
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-pip install -e "../models[text]"  # the ML package (+ torch/transformers for text emotion)
+pip install -e "../models[text,speech]"  # the ML package (+ torch/transformers, faster-whisper)
 uvicorn app.main:app --reload
 ```
 
 API docs at http://localhost:8000/docs.
+
+## Speech-to-text
+
+`POST /api/v1/analysis/transcribe` takes the answer recording as multipart field `audio`
+(webm/opus from the browser; mp4, ogg and wav also work, and video files are read for their
+audio) and returns `transcript`, `speech_detected`, `duration_s`, word timestamps, `model`
+and `"processed_locally": true`. It runs Whisper base.en with faster-whisper on the CPU;
+nothing is sent off the machine.
+
+- Weights default to `../models/checkpoints/faster-whisper-base.en` (see `models/README.md`
+  to download them once); set `SPEECH_MODEL_DIR` to use another folder. Loaded on the first
+  request.
+- Errors: empty or undecodable recording → `422`; larger than `MAX_AUDIO_UPLOAD_MB`
+  (default 50) → `413`; model folder missing or unloadable → `503`. No speech is not an
+  error: `transcript` is empty and `speech_detected` is `false`.
+
+```bash
+curl -F "audio=@answer.webm;type=audio/webm" http://localhost:8000/api/v1/analysis/transcribe
+```
 
 ## Experimental text emotion analysis
 

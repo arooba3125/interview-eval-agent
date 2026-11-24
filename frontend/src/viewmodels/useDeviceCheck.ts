@@ -3,7 +3,17 @@ import type { InterviewConfig } from "../domain/types";
 import { interviewApi } from "../services/interviewApi";
 import { historyStore } from "../services/historyStore";
 import { setupDraft } from "../services/setupDraft";
-import { MediaAccessError, createRecorder, openStream, startLevelMeter, stopStream, type MediaErrorKind } from "../services/mediaService";
+import {
+  MediaAccessError,
+  createRecorder,
+  listMicrophones,
+  micPreference,
+  openStream,
+  startLevelMeter,
+  stopStream,
+  type MediaErrorKind,
+  type MicOption,
+} from "../services/mediaService";
 
 export type DeviceStatus = "idle" | "checking" | "ready" | "blocked" | "error";
 
@@ -54,11 +64,20 @@ export function useDeviceCheck(config: InterviewConfig | null) {
     stopStream(streams.current.cam);
   }, []);
 
+  // Microphones the browser can see, and the one in use.
+  const [microphones, setMicrophones] = useState<MicOption[]>([]);
+  const [micId, setMicId] = useState<string | null>(() => micPreference.get());
+  // Loudest level seen while the test clip was recording; null before the first clip.
+  const clipPeak = useRef(0);
+  const clipRecording = useRef(false);
+  const [testClipSilent, setTestClipSilent] = useState<boolean | null>(null);
+
   useEffect(() => {
     if (!micStream) return;
     return startLevelMeter(micStream, (l) => {
       setLevel(l);
       if (l > 0.08) setHeardSound(true);
+      if (clipRecording.current) clipPeak.current = Math.max(clipPeak.current, l);
     });
   }, [micStream]);
 
@@ -66,18 +85,37 @@ export function useDeviceCheck(config: InterviewConfig | null) {
     if (testClip.url) URL.revokeObjectURL(testClip.url);
   }, [testClip.url]);
 
-  const checkMic = useCallback(async () => {
+  const openMic = useCallback(async (id: string | null) => {
     setMic({ status: "checking", message: null, errorKind: null });
+    setHeardSound(false);
+    setLevel(0);
+    setTestClipSilent(null);
     try {
       stopStream(streams.current.mic);
-      const s = await openStream({ audio: true, video: false });
+      const s = await openStream({ audio: true, video: false, micId: id });
       setMicStream(s);
+      // Record which device actually opened (the default resolves to a real one).
+      const opened = s.getAudioTracks()[0]?.getSettings().deviceId ?? null;
+      setMicId(id ?? opened);
+      setMicrophones(await listMicrophones().catch(() => []));
       setMic({ status: "ready", message: null, errorKind: null });
     } catch (e) {
       setMicStream(null);
       setMic(failure(e));
     }
   }, []);
+
+  const checkMic = useCallback(() => openMic(micPreference.get()), [openMic]);
+
+  /** Switch to another microphone and remember it for the interview. */
+  const chooseMic = useCallback(
+    (id: string) => {
+      micPreference.set(id);
+      setTestClip((t) => ({ ...t, status: "idle" }));
+      void openMic(id);
+    },
+    [openMic],
+  );
 
   const checkCamera = useCallback(async () => {
     setCamera({ status: "checking", message: null, errorKind: null });
@@ -109,9 +147,14 @@ export function useDeviceCheck(config: InterviewConfig | null) {
     const chunks: Blob[] = [];
     rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
     rec.onstop = () => {
-      const url = URL.createObjectURL(new Blob(chunks, { type: rec.mimeType || "audio/webm" }));
-      setTestClip({ status: "ready", url, secondsLeft: TEST_CLIP_SECONDS });
+      clipRecording.current = false;
+      const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+      setTestClipSilent(blob.size === 0 || clipPeak.current < 0.02);
+      setTestClip({ status: "ready", url: URL.createObjectURL(blob), secondsLeft: TEST_CLIP_SECONDS });
     };
+    clipPeak.current = 0;
+    clipRecording.current = true;
+    setTestClipSilent(null);
     rec.start();
     setTestClip((t) => ({ status: "recording", url: t.url, secondsLeft: TEST_CLIP_SECONDS }));
     let left = TEST_CLIP_SECONDS;
@@ -165,7 +208,8 @@ export function useDeviceCheck(config: InterviewConfig | null) {
   return {
     mic, camera, micStream, cameraStream, level, heardSound,
     useCamera, toggleCamera, consentAudio, setConsentAudio, consentVideo, setConsentVideo,
-    checkMic, checkCamera, testClip, recordTestClip,
+    checkMic, checkCamera, testClip, recordTestClip, testClipSilent,
+    microphones, micId, chooseMic,
     blockers, attemptedStart, starting, startError, start,
   };
 }

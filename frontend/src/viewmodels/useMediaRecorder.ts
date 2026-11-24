@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MediaAccessError, createRecorder, openStream, startLevelMeter, stopStream } from "../services/mediaService";
+import { MediaAccessError, createRecorder, micPreference, openStream, startLevelMeter, stopStream } from "../services/mediaService";
 
 export type RecorderStatus = "idle" | "opening" | "live" | "recording" | "recorded" | "error";
 
@@ -65,7 +65,7 @@ export function useMediaRecorder(opts: { video: boolean; maxSeconds: number }) {
     if (opening.current) return opening.current;
     setStatus("opening");
     setError(null);
-    opening.current = openStream({ audio: true, video: opts.video })
+    opening.current = openStream({ audio: true, video: opts.video, micId: micPreference.get() })
       .then((s) => {
         if (released.current) {
           stopStream(s);
